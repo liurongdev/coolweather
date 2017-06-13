@@ -1,6 +1,7 @@
 package android.coolweather.com.coolweather;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.coolweather.com.coolweather.db.City;
 import android.coolweather.com.coolweather.db.County;
 import android.coolweather.com.coolweather.db.Provice;
@@ -62,9 +63,7 @@ public class ChooseAreaFragment extends Fragment {
         backButton=(Button)view.findViewById(R.id.back_button);
         listView=(ListView)view.findViewById(R.id.list_view);
         adapter=new ArrayAdapter<String>(getContext(),android.R.layout.simple_list_item_1,dataList);
-        Log.d("data","datalist="+dataList);
         listView.setAdapter(adapter);
-        Log.d("data","1111");
         return view;
     }
 
@@ -79,8 +78,14 @@ public class ChooseAreaFragment extends Fragment {
                     queryCities();
                 }else if(currentLevel==LEVLE_CITY){
                     selectedCity=cityList.get(position);
-                    Log.d("data","queryCounty**cityid="+selectedCity.getId());
                     queryCounties();
+                }else if(currentLevel==LEVEL_COUNTY){
+                    String weatherId=countyList.get(position).getWeatherId();
+                    Intent intent=new Intent(getActivity(),WeatherActivity.class);
+                    intent.putExtra("weather_id",weatherId);
+                    Log.d("data","@weather_id="+weatherId);
+                    startActivity(intent);
+                    getActivity().finish();
                 }
             }
         });
@@ -99,12 +104,9 @@ public class ChooseAreaFragment extends Fragment {
     public void queryProvices(){
         titleText.setText("中国");
         backButton.setVisibility(View.GONE);
-        Log.d("data","22222");
         proviceList= DataSupport.findAll(Provice.class);
-        Log.d("data","33333");
         if(proviceList.size()>0){
             dataList.clear();
-            Log.d("data","44444");
             for(Provice provice:proviceList){
                 dataList.add(provice.getProviceName());
             }
@@ -113,7 +115,6 @@ public class ChooseAreaFragment extends Fragment {
             currentLevel=LEVEL_PROVICE;
         }else{
             String address="http://guolin.tech/api/china";
-            Log.d("data","55555");
             queryFromServer(address,"province");
         }
     }
@@ -170,37 +171,25 @@ public class ChooseAreaFragment extends Fragment {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                    Log.d("data","6666666");
                     String responseText=response.body().string();
-                    Log.d("data","responseText="+responseText);
                     boolean result=false;
                     if("province".equals(type)){
-                        Log.d("data","777777");
                         result= Utility.handleProviceResponse(responseText);
-                        Log.d("data","result="+result);
                     }else if("city".equals(type)){
-                        Log.d("data","888888");
                         result=Utility.handleCityResponse(responseText,selectedProvice.getId());
                     }else if("county".equals(type)){
-                        Log.d("data","9999999");
                         result=Utility.handleCountyResponse(responseText,selectedCity.getId());
                     }
                     if(result){
-                        Log.d("data","!!!!!!!!!!");
                         getActivity().runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Log.d("data","++++++++");
                                 closeProgressDialog();
                                 if("province".equals(type)){
-                                    Log.d("data","=========");
                                     queryProvices();
-                                    Log.d("data","##########");
                                 }else if("city".equals(type)){
-                                    Log.d("data","$$$$$$$$$$");
                                     queryCities();
                                 }else if("county".equals(type)){
-                                    Log.d("data","%%%%%%%%");
                                     queryCounties();
                                 }
                             }
