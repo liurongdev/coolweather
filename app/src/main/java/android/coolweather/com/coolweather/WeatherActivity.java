@@ -8,11 +8,15 @@ import android.coolweather.com.coolweather.util.Utility;
 import android.graphics.Color;
 import android.os.Build;
 import android.preference.PreferenceManager;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -44,6 +48,11 @@ public class WeatherActivity extends AppCompatActivity {
     private TextView sportText;
 
     private ImageView bingPicImg;
+    public  SwipeRefreshLayout swipeRefreshLayout;
+    private String mWeatherId;
+
+    private Button navButton;
+    public DrawerLayout drawerLayout;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,18 +75,24 @@ public class WeatherActivity extends AppCompatActivity {
         this.carWashText = (TextView) findViewById(R.id.car_wash_text);
         this.comfortText = (TextView) findViewById(R.id.comfort_text);
         this.bingPicImg=(ImageView)findViewById(R.id.bing_pc_img);
+        this.swipeRefreshLayout=(SwipeRefreshLayout)findViewById(R.id.swipe_refresh);
+        this.swipeRefreshLayout.setColorSchemeResources(R.color.colorPrimary);
+
+        this.drawerLayout=(DrawerLayout)findViewById(R.id.drawer_layout);
+        this.navButton=(Button)findViewById(R.id.nav_button);
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         String weatherString = preferences.getString("weather", null);
         Log.d("data","@weatherString="+weatherString);
         if (weatherString != null) {
             Log.d("data","weatherString!=null is right");
             Weather weather = Utility.handleWeatherResponse(weatherString);
+            mWeatherId=weather.basic.weatherId;
             showWeatherInfo(weather);
         } else {
-            String weatherId = getIntent().getStringExtra("weather_id");
-            Log.d("data","weather_id form intent="+weatherId);
+            mWeatherId = getIntent().getStringExtra("weather_id");
+            Log.d("data","weather_id form intent="+mWeatherId);
             weatherLayout.setVisibility(View.VISIBLE);
-            requestWeather(weatherId);
+            requestWeather(mWeatherId);
         }
         String bingPic=preferences.getString("bing_pic",null);
         if(bingPic!=null){
@@ -85,6 +100,18 @@ public class WeatherActivity extends AppCompatActivity {
         }else{
             loadBingPic();
         }
+        this.swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener(){
+            @Override
+            public void onRefresh() {
+                requestWeather(mWeatherId);
+            }
+        });
+        this.navButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawerLayout.openDrawer(GravityCompat.START);
+            }
+        });
     }
     public void loadBingPic(){
         String picUrl="http://guolin.tech/api/bing_pic";
@@ -164,6 +191,7 @@ public class WeatherActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             Toast.makeText(WeatherActivity.this, "获取天气信息失败！", Toast.LENGTH_SHORT).show();
+                            swipeRefreshLayout.setRefreshing(false);
                     }
                     });
                 }
@@ -185,9 +213,11 @@ public class WeatherActivity extends AppCompatActivity {
                             }else{
                                 Toast.makeText(WeatherActivity.this, "获取天气信息失败！", Toast.LENGTH_SHORT).show();
                             }
+                            swipeRefreshLayout.setRefreshing(false);
                         }
                     });
                 }
             });
         }
 }
+
